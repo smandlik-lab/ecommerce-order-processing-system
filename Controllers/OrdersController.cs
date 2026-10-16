@@ -45,8 +45,7 @@ namespace EcommerceOrderProcessing.Controllers
             return Ok(orders);
         }
 
-        [HttpGet("{id}")]
-        //[SwaggerResponseExample(200, typeof(EcommerceOrderProcessing.SwaggerExamples.OrderResponseExample))]
+        [HttpGet("{id}")]        
         public async Task<ActionResult<OrderResponseDto>> GetOrderById(int id)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -76,7 +75,7 @@ namespace EcommerceOrderProcessing.Controllers
         }
 
         [HttpGet("all")]
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetAllOrders()
         {
             var orders = await _orderService.GetAllOrdersAsync();
@@ -85,7 +84,6 @@ namespace EcommerceOrderProcessing.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPatch("{id}/status")]
-        //[SwaggerRequestExample(typeof(UpdateOrderStatusDto), typeof(EcommerceOrderProcessing.SwaggerExamples.UpdateOrderStatusExample))]
         public async Task<IActionResult> PatchOrderStatus(int id, [FromBody] UpdateOrderStatusDto dto)
         {
             if (dto == null)
@@ -108,7 +106,6 @@ namespace EcommerceOrderProcessing.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpPatch("{id}/payment-status")]
-        //[SwaggerRequestExample(typeof(UpdatePaymentStatusDto), typeof(EcommerceOrderProcessing.SwaggerExamples.UpdatePaymentStatusExample))]
         public async Task<IActionResult> UpdatePaymentStatus(int id, [FromBody] UpdatePaymentStatusDto dto)
         {
             try

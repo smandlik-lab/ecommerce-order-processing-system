@@ -83,7 +83,27 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+        ClockSkew = TimeSpan.FromSeconds(30)
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            var response = new { message = $"Authentication failed: {context.Exception.Message}" };
+            return context.Response.WriteAsJsonAsync(response);
+        },
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = 401;
+            context.Response.ContentType = "application/json";
+            var response = new { message = "Token validation failed. Please provide a valid JWT token." };
+            return context.Response.WriteAsJsonAsync(response);
+        }
     };
 });
 
@@ -103,8 +123,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseRouting();
 app.UseHttpsRedirection();
+app.UseRouting();
 
 // Authentication & Authorization must come AFTER Swagger middleware and Routing
 app.UseAuthentication();
