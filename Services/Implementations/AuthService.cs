@@ -18,65 +18,114 @@ namespace EcommerceOrderProcessing.Services.Implementations
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _config;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository, IConfiguration config, IUnitOfWork unitOfWork)
+        public AuthService(IUserRepository userRepository, IConfiguration config, IUnitOfWork unitOfWork, ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _config = config;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         public async Task RegisterAsync(RegisterDto regDto)
         {
-            var emailExists = await _userRepository.EmailExistsAsync(regDto.Email);
-            if (emailExists)
-                throw new Exception("Email already exists.");
-
-            var user = new User
+            try
             {
-                FullName = regDto.FullName,
-                Email = regDto.Email,
-                PasswordHash = HashPassword(regDto.Password),
-                PhoneNumber = regDto.PhoneNumber,
-                Role = UserRole.Customer
-            };
+                _logger.LogInformation("Registration process started for email: {Email}", regDto.Email);
+                var emailExists = await _userRepository.EmailExistsAsync(regDto.Email);
+                if (emailExists)
+                {
+                    _logger.LogWarning("Registration failed: Email already exists. Email: {Email}", regDto.Email);
+                    throw new Exception("Email already exists.");
+                }
 
-            await _userRepository.AddAsync(user);
-            await _unitOfWork.SaveChangesAsync();
+                var user = new User
+                {
+                    FullName = regDto.FullName,
+                    Email = regDto.Email,
+                    PasswordHash = HashPassword(regDto.Password),
+                    PhoneNumber = regDto.PhoneNumber,
+                    Role = UserRole.Customer
+                };
+
+                await _userRepository.AddAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("User registered successfully. Email: {Email}, UserId: {UserId}", regDto.Email, user.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during registration for email: {Email}. Details: {ErrorMessage}", regDto.Email, ex.Message);
+                throw;
+            }
         }
 
         public async Task<string> LoginAsync(LoginDto logDto)
         {
-            var user = await _userRepository.GetByEmailAsync(logDto.Email);
+            try
+            {
+                _logger.LogInformation("Login process started for email: {Email}", logDto.Email);
+                var user = await _userRepository.GetByEmailAsync(logDto.Email);
 
-            if (user == null)
-                throw new Exception("Invalid email or password.");
+                if (user == null)
+                {
+                    _logger.LogWarning("Login failed: User not found for email: {Email}", logDto.Email);
+                    throw new Exception("Invalid email or password.");
+                }
 
-            var hashedPassword = HashPassword(logDto.Password);
+                var hashedPassword = HashPassword(logDto.Password);
 
-            if (user.PasswordHash != hashedPassword)
-                throw new Exception("Invalid email or password.");
+                if (user.PasswordHash != hashedPassword)
+                {
+                    _logger.LogWarning("Login failed: Invalid password for email: {Email}", logDto.Email);
+                    throw new Exception("Invalid email or password.");
+                }
 
-            return GenerateToken(user);
+                var token = GenerateToken(user);
+                _logger.LogInformation("User logged in successfully. Email: {Email}, UserId: {UserId}", logDto.Email, user.Id);
+                return token;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during login for email: {Email}. Details: {ErrorMessage}", logDto.Email, ex.Message);
+                throw;
+            }
         }
 
         public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
         {
-            var user = await _userRepository.GetByEmailAsync(dto.Email);
+            try
+            {
+                _logger.LogInformation("Forgot password process started for email: {Email}", dto.Email);
+                var user = await _userRepository.GetByEmailAsync(dto.Email);
 
-            if (user == null)
-                throw new Exception("User not found.");
+                if (user == null)
+                {
+                    _logger.LogWarning("Forgot password failed: User not found for email: {Email}", dto.Email);
+                    throw new Exception("User not found.");
+                }
 
-            if (user.PhoneNumber != dto.PhoneNumber)
-                throw new Exception("Email or phone number is incorrect.");
+                if (user.PhoneNumber != dto.PhoneNumber)
+                {
+                    _logger.LogWarning("Forgot password failed: Phone number mismatch for email: {Email}", dto.Email);
+                    throw new Exception("Email or phone number is incorrect.");
+                }
 
-            user.PasswordHash = HashPassword(dto.NewPassword);
+                user.PasswordHash = HashPassword(dto.NewPassword);
 
-            await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("Password reset successfully for email: {Email}", dto.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during forgot password for email: {Email}. Details: {ErrorMessage}", dto.Email, ex.Message);
+                throw;
+            }
         }
 
         public string Logout()
         {
+            _logger.LogInformation("User logged out successfully.");
             return "Logged out successfully.";
         }
 
@@ -116,100 +165,178 @@ namespace EcommerceOrderProcessing.Services.Implementations
 
         public async Task<bool> PatchProfileAsync(int userId, UpdateProfileDto dto)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-                return false;
-
-            if (dto.FullName != null)
+            try
             {
-                if (string.IsNullOrWhiteSpace(dto.FullName))
-                    throw new ArgumentException("Full name cannot be empty.");
+                _logger.LogInformation("Profile update process started for UserId: {UserId}", userId);
+                var user = await _userRepository.GetByIdAsync(userId);
 
-                user.FullName = dto.FullName.Trim();
+                if (user == null)
+                {
+                    _logger.LogWarning("Profile update failed: User not found for UserId: {UserId}", userId);
+                    return false;
+                }
+
+                if (dto.FullName != null)
+                {
+                    if (string.IsNullOrWhiteSpace(dto.FullName))
+                    {
+                        _logger.LogWarning("Profile update failed: Full name cannot be empty for UserId: {UserId}", userId);
+                        throw new ArgumentException("Full name cannot be empty.");
+                    }
+
+                    user.FullName = dto.FullName.Trim();
+                    _logger.LogInformation("Full name updated for UserId: {UserId}", userId);
+                }
+
+                if (dto.PhoneNumber != null)
+                {
+                    var phone = dto.PhoneNumber.Trim();
+
+                    if (string.IsNullOrWhiteSpace(phone))
+                    {
+                        _logger.LogWarning("Profile update failed: Phone number cannot be empty for UserId: {UserId}", userId);
+                        throw new ArgumentException("Phone number cannot be empty.");
+                    }
+
+                    if (phone.Length != 11 || !phone.All(char.IsDigit) || !phone.StartsWith("01"))
+                    {
+                        _logger.LogWarning("Profile update failed: Invalid phone number for UserId: {UserId}", userId);
+                        throw new ArgumentException("Phone number must be a valid Egyptian phone number.");
+                    }
+
+                    var existingUser = await _userRepository.GetByPhoneNumberAsync(phone);
+
+                    if (existingUser != null && existingUser.Id != userId)
+                    {
+                        _logger.LogWarning("Profile update failed: Phone number already in use for UserId: {UserId}", userId);
+                        throw new ArgumentException("Phone number is already in use.");
+                    }
+
+                    user.PhoneNumber = phone;
+                    _logger.LogInformation("Phone number updated for UserId: {UserId}", userId);
+                }
+
+                _userRepository.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("Profile updated successfully for UserId: {UserId}", userId);
+                return true;
             }
-
-            if (dto.PhoneNumber != null)
+            catch (Exception ex)
             {
-                var phone = dto.PhoneNumber.Trim();
-
-                if (string.IsNullOrWhiteSpace(phone))
-                    throw new ArgumentException("Phone number cannot be empty.");
-
-                if (phone.Length != 11 || !phone.All(char.IsDigit) || !phone.StartsWith("01"))
-                    throw new ArgumentException("Phone number must be a valid Egyptian phone number.");
-
-                var existingUser = await _userRepository.GetByPhoneNumberAsync(phone);
-
-                if (existingUser != null && existingUser.Id != userId)
-                    throw new ArgumentException("Phone number is already in use.");
-
-                user.PhoneNumber = phone;
+                _logger.LogError(ex, "Error occurred during profile update for UserId: {UserId}. Details: {ErrorMessage}", userId, ex.Message);
+                throw;
             }
-
-            _userRepository.Update(user);
-            await _unitOfWork.SaveChangesAsync();
-            return true;
         }
 
         public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDto dto)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
-
-            if (user == null)
-                return false;
-
-            if (string.IsNullOrWhiteSpace(dto.CurrentPassword) ||
-                string.IsNullOrWhiteSpace(dto.NewPassword) ||
-                string.IsNullOrWhiteSpace(dto.ConfirmNewPassword))
+            try
             {
-                throw new ArgumentException("All password fields are required.");
+                _logger.LogInformation("Change password process started for UserId: {UserId}", userId);
+                var user = await _userRepository.GetByIdAsync(userId);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("Change password failed: User not found for UserId: {UserId}", userId);
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(dto.CurrentPassword) ||
+                    string.IsNullOrWhiteSpace(dto.NewPassword) ||
+                    string.IsNullOrWhiteSpace(dto.ConfirmNewPassword))
+                {
+                    _logger.LogWarning("Change password failed: Missing required fields for UserId: {UserId}", userId);
+                    throw new ArgumentException("All password fields are required.");
+                }
+
+                if (dto.NewPassword != dto.ConfirmNewPassword)
+                {
+                    _logger.LogWarning("Change password failed: New password and confirm password do not match for UserId: {UserId}", userId);
+                    throw new ArgumentException("New password and confirm password do not match.");
+                }
+
+                if (HashPassword(dto.CurrentPassword) != user.PasswordHash)
+                {
+                    _logger.LogWarning("Change password failed: Current password is incorrect for UserId: {UserId}", userId);
+                    throw new ArgumentException("Current password is incorrect.");
+                }
+
+                if (dto.NewPassword == dto.CurrentPassword)
+                {
+                    _logger.LogWarning("Change password failed: New password same as current password for UserId: {UserId}", userId);
+                    throw new ArgumentException("New password must be different from current password.");
+                }
+
+                if (dto.NewPassword.Length < 6)
+                {
+                    _logger.LogWarning("Change password failed: New password too short for UserId: {UserId}", userId);
+                    throw new ArgumentException("New password must be at least 6 characters long.");
+                }
+
+                user.PasswordHash = HashPassword(dto.NewPassword);
+
+                _userRepository.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("Password changed successfully for UserId: {UserId}", userId);
+                return true;
             }
-
-            if (dto.NewPassword != dto.ConfirmNewPassword)
-                throw new ArgumentException("New password and confirm password do not match.");
-
-            if (HashPassword(dto.CurrentPassword) != user.PasswordHash)
-                throw new ArgumentException("Current password is incorrect.");
-
-            if (dto.NewPassword == dto.CurrentPassword)
-                throw new ArgumentException("New password must be different from current password.");
-
-            if (dto.NewPassword.Length < 6)
-                throw new ArgumentException("New password must be at least 6 characters long.");
-
-            user.PasswordHash = HashPassword(dto.NewPassword);
-
-            _userRepository.Update(user);
-            await _unitOfWork.SaveChangesAsync();
-            return true;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during password change for UserId: {UserId}. Details: {ErrorMessage}", userId, ex.Message);
+                throw;
+            }
         }
 
         public async Task<bool> ChangeEmailAsync(int userId, ChangeEmailDto dto)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
+            try
+            {
+                _logger.LogInformation("Change email process started for UserId: {UserId}", userId);
+                var user = await _userRepository.GetByIdAsync(userId);
 
-            if (user == null)
-                return false;
+                if (user == null)
+                {
+                    _logger.LogWarning("Change email failed: User not found for UserId: {UserId}", userId);
+                    return false;
+                }
 
-            if (string.IsNullOrWhiteSpace(dto.NewEmail))
-                throw new ArgumentException("Email is required.");
+                if (string.IsNullOrWhiteSpace(dto.NewEmail))
+                {
+                    _logger.LogWarning("Change email failed: Email is required for UserId: {UserId}", userId);
+                    throw new ArgumentException("Email is required.");
+                }
 
-            if (string.IsNullOrWhiteSpace(dto.Password))
-                throw new ArgumentException("Password is required.");
+                if (string.IsNullOrWhiteSpace(dto.Password))
+                {
+                    _logger.LogWarning("Change email failed: Password is required for UserId: {UserId}", userId);
+                    throw new ArgumentException("Password is required.");
+                }
 
-            if (HashPassword(dto.Password) != user.PasswordHash)
-                throw new ArgumentException("Incorrect password.");
+                if (HashPassword(dto.Password) != user.PasswordHash)
+                {
+                    _logger.LogWarning("Change email failed: Incorrect password for UserId: {UserId}", userId);
+                    throw new ArgumentException("Incorrect password.");
+                }
 
-            var emailExists = await _userRepository.EmailExistsAsync(dto.NewEmail);
-            if (emailExists)
-                throw new ArgumentException("Email already exists.");
+                var emailExists = await _userRepository.EmailExistsAsync(dto.NewEmail);
+                if (emailExists)
+                {
+                    _logger.LogWarning("Change email failed: Email already exists. UserId: {UserId}, NewEmail: {NewEmail}", userId, dto.NewEmail);
+                    throw new ArgumentException("Email already exists.");
+                }
 
-            user.Email = dto.NewEmail;
+                user.Email = dto.NewEmail;
 
-            _userRepository.Update(user);
-            await _unitOfWork.SaveChangesAsync();
-            return true;
+                _userRepository.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("Email changed successfully for UserId: {UserId}. NewEmail: {NewEmail}", userId, dto.NewEmail);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during email change for UserId: {UserId}. Details: {ErrorMessage}", userId, ex.Message);
+                throw;
+            }
         }
     }
 }
