@@ -1,6 +1,8 @@
+using Amazon.SQS;
 using EcommerceOrderProcessing.Data;
 using EcommerceOrderProcessing.Repositories.Implementations;
 using EcommerceOrderProcessing.Repositories.Interfaces;
+using EcommerceOrderProcessing.Services.BackgroundServices;
 using EcommerceOrderProcessing.Services.Implementations;
 using EcommerceOrderProcessing.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -106,6 +108,18 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+
+// Register AWS Options and SQS Client
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+builder.Services.AddAWSService<IAmazonSQS>();
+
+// Register Producer Service
+builder.Services.AddScoped<IOrderQueueService, OrderQueueService>();
+
+// Register Consumer Background Worker
+builder.Services.AddHostedService<OrderQueueConsumerService>();
+
 
 var app = builder.Build();
 
