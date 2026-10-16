@@ -16,10 +16,13 @@ namespace EcommerceOrderProcessing.Controllers
         private readonly IAuthService _authService;
         private readonly IUserRepository _userRepository;
 
-        public AuthController(IAuthService authService, IUserRepository userRepository)
+        private readonly ILogger<AuthController> _logger;
+
+        public AuthController(IAuthService authService, IUserRepository userRepository, ILogger<AuthController> logger)
         {
             _authService = authService;
             _userRepository = userRepository;
+            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -27,11 +30,14 @@ namespace EcommerceOrderProcessing.Controllers
         {
             try
             {
+                _logger.LogInformation("Registration request received for email: {Email}", regDto.Email);
                 await _authService.RegisterAsync(regDto);
+                _logger.LogInformation("User registered successfully. Email: {Email}", regDto.Email);
                 return Ok(new { message = "User registered successfully." });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error occurred during registration for email: {Email}. Details: {ErrorMessage}", regDto.Email, ex.Message);
                 return BadRequest(ex.Message);
             }
         }
@@ -41,11 +47,14 @@ namespace EcommerceOrderProcessing.Controllers
         {
             try
             {
+                _logger.LogInformation("Login request received for email: {Email}", logDto.Email);
                 var token = await _authService.LoginAsync(logDto);
+                _logger.LogInformation("User logged in successfully. Email: {Email}", logDto.Email);
                 return Ok(new { token });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Login failed for email: {Email}. Details: {ErrorMessage}", logDto.Email, ex.Message);
                 return Unauthorized(ex.Message);
             }
         }
@@ -54,23 +63,40 @@ namespace EcommerceOrderProcessing.Controllers
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId == null)
-                return Unauthorized();
-
-            var user = await _userRepository.GetByIdAsync(int.Parse(userId));
-
-            if (user == null)
-                return NotFound();
-
-            return Ok(new
+            try
             {
-                user.Id,
-                user.FullName,
-                user.Email,
-                user.PhoneNumber
-            });
+                _logger.LogInformation("GetCurrentUser request initiated.");
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                if (userId == null)
+                {
+                    _logger.LogWarning("GetCurrentUser failed: User ID not found in claims.");
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("Fetching user details for UserId: {UserId}", userId);
+                var user = await _userRepository.GetByIdAsync(int.Parse(userId));
+
+                if (user == null)
+                {
+                    _logger.LogWarning("GetCurrentUser failed: User not found for UserId: {UserId}", userId);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("User details retrieved successfully for UserId: {UserId}", userId);
+                return Ok(new
+                {
+                    user.Id,
+                    user.FullName,
+                    user.Email,
+                    user.PhoneNumber
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving current user. Details: {ErrorMessage}", ex.Message);
+                return StatusCode(500, "An error occurred while retrieving user information.");
+            }
         }
     }
 }
