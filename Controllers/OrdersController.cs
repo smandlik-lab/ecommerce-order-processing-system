@@ -1,4 +1,5 @@
 ﻿using EcommerceOrderProcessing.DTOs.OrderDTOs;
+using EcommerceOrderProcessing.Models;
 using EcommerceOrderProcessing.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -80,6 +81,30 @@ namespace EcommerceOrderProcessing.Controllers
         {
             var orders = await _orderService.GetAllOrdersAsync();
             return Ok(orders);
+        }
+
+        [HttpGet("all/filter")]
+        public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetAllOrdersWithStatusFilter([FromQuery] string? status = null)
+        {
+            try
+            {
+                OrderStatus? parsedStatus = null;
+
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    if (!Enum.TryParse<OrderStatus>(status, true, out var statusValue))
+                        return BadRequest(new { message = "Invalid status. Allowed values: Pending, Completed, Cancelled." });
+
+                    parsedStatus = statusValue;
+                }
+
+                var orders = await _orderService.GetAllOrdersByStatusAsync(parsedStatus);
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [Authorize(Roles = "Admin")]
