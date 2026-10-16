@@ -7,7 +7,12 @@
     <UserSecretsId>669f83e9-1d20-4ba9-b8e0-b58c79e69297</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <DefaultItemExcludes>$(DefaultItemExcludes);EcommerceOrderProcessing.Tests/**</DefaultItemExcludes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="EcommerceOrderProcessing.Tests\EcommerceOrderProcessing.Tests.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.102.4" />
