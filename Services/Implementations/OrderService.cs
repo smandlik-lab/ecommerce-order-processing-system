@@ -113,6 +113,12 @@ namespace EcommerceOrderProcessing.Services.Implementations
             return orders.Select(MapToDto).ToList();
         }
 
+        public async Task<List<OrderResponseDto>> GetAllOrdersByStatusAsync(OrderStatus? status = null)
+        {
+            var orders = await _orderRepository.GetAllOrdersByStatusAsync(status);
+            return orders.Select(MapToDto).ToList();
+        }
+
         public async Task<bool> PatchOrderStatusAsync(int orderId, UpdateOrderStatusDto dto)
         {
             if (!Enum.TryParse<OrderStatus>(dto.Status, true, out var parsedStatus))

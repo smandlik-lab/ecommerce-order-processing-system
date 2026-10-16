@@ -40,6 +40,21 @@ namespace EcommerceOrderProcessing.Repositories.Implementations
                 .ToListAsync();
         }
 
+        public async Task<List<Order>> GetAllOrdersByStatusAsync(OrderStatus? status = null)
+        {
+            IQueryable<Order> query = _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .Include(o => o.User);
+
+            if (status.HasValue)
+            {
+                query = query.Where(o => o.Status == status.Value);
+            }
+
+            return await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+        }
+
         public override async Task<Order?> GetByIdAsync(int id)
         {
             return await _context.Orders

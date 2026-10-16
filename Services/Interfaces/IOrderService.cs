@@ -1,4 +1,5 @@
 ﻿using EcommerceOrderProcessing.DTOs.OrderDTOs;
+using EcommerceOrderProcessing.Models;
 
 namespace EcommerceOrderProcessing.Services.Interfaces
 {
@@ -9,6 +10,7 @@ namespace EcommerceOrderProcessing.Services.Interfaces
         Task<OrderResponseDto?> GetOrderByIdAsync(int userId, int orderId);
         Task<object> CancelOrderAsync(int userId, int orderId);
         Task<List<OrderResponseDto>> GetAllOrdersAsync();
+        Task<List<OrderResponseDto>> GetAllOrdersByStatusAsync(OrderStatus? status = null);
         Task<bool> PatchOrderStatusAsync(int orderId, UpdateOrderStatusDto dto);
 
         Task<IEnumerable<object>> GetAllOrdersForAdminAsync();

@@ -8,6 +8,7 @@ namespace EcommerceOrderProcessing.Repositories.Interfaces
         Task<Order?> GetOrderByIdAsync(int orderId);
         Task<List<Order>> GetOrdersByUserIdAsync(int userId);
         Task<List<Order>> GetAllOrdersAsync();
+        Task<List<Order>> GetAllOrdersByStatusAsync(OrderStatus? status = null);
         Task<Order?> GetByIdWithItemsAndProductsAsync(int id);
         Task<Cart?> GetCartWithItemsAndProductsByUserIdAsync(int userId);
         Task<List<Order>> GetAllOrdersForAdminAsync();
