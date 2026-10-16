@@ -26,10 +26,27 @@
 - For local JWT development, use .NET User Secrets as documented in `README.md`. Configure AWS credentials through the AWS SDK's standard credential chain.
 - Preserve required configuration keys such as `ConnectionStrings:DefaultConnection`, `Jwt:Key`, and `AWSQueueSettings:OrderQueueUrl`; fail clearly when a required setting is absent.
 
+## AI Guardrails (Don'ts)
+- Do not invent API routes, DTO fields, entity properties, service methods, configuration keys, package versions, or architectural components. Inspect the relevant controller, interface, implementation, model, and configuration before using or changing them.
+- Do not assume a feature exists because it is mentioned in `README.md`, appears in a DTO/model, or is listed as a future improvement. Confirm it is wired into the running application by checking its implementation and registrations.
+- Do not claim an endpoint, integration, test, build, migration, or other behavior works unless the repository contains evidence and, where applicable, it has been run and verified.
+- Do not assume there are no tests: the solution includes `EcommerceOrderProcessing.Tests`. Check existing tests and conventions before adding or changing tests.
+- Do not add a new project, package, architectural pattern, folder hierarchy, or abstraction unless the requested change needs it and the existing approach cannot reasonably support it.
+- Do not put credentials or local machine settings in tracked configuration, and do not run database migrations against a configured database unless explicitly required by the task.
+- Do not make unrelated cleanup, broad refactors, or API/database contract changes while implementing a focused request. Preserve existing behavior unless the requested change requires otherwise.
+
+## Task Structure for AI Changes
+1. Inspect the relevant source, tests, and configuration; treat checked-in code and project files as evidence, not assumptions.
+2. Summarize the verified behavior and identify any unknowns that affect the requested change. Ask for clarification rather than inventing product behavior when the ambiguity materially changes the implementation.
+3. Make the smallest complete change that follows the existing architecture and preserves unrelated behavior. Update directly related tests and documentation.
+4. Run the narrowest relevant validation command. If validation cannot be run, state that clearly and do not imply it passed.
+5. Report the files changed, the behavior changed, validation performed and its result, plus any remaining assumptions or limitations.
+
 ## Build and Run
 - Restore and build from the repository root:
   - `dotnet restore EcommerceOrderProcessing.slnx`
   - `dotnet build EcommerceOrderProcessing.slnx`
 - Run the API with `dotnet run --project EcommerceOrderProcessing.csproj`.
+- Run the test project with `dotnet test EcommerceOrderProcessing.Tests/EcommerceOrderProcessing.Tests.csproj`.
 - Add a migration with `dotnet ef migrations add <MigrationName>` and apply it with `dotnet ef database update`.
-- There is currently no test project in the repository. If one is added, include tests for changed behavior and run its tests before completion.
+- Add or update tests for changed behavior, following the existing xUnit test project and conventions.
