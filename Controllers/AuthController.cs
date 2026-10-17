@@ -1,10 +1,8 @@
-﻿using EcommerceOrderProcessing.DTOs;
-using EcommerceOrderProcessing.DTOs.Auth;
+﻿using EcommerceOrderProcessing.DTOs.Auth;
 using EcommerceOrderProcessing.Repositories.Interfaces;
 using EcommerceOrderProcessing.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 
 namespace EcommerceOrderProcessing.Controllers
@@ -18,6 +16,12 @@ namespace EcommerceOrderProcessing.Controllers
 
         private readonly ILogger<AuthController> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthController"/> class.
+        /// </summary>
+        /// <param name="authService">The authentication service used for handling user registration and login.</param>
+        /// <param name="userRepository">The user repository used for accessing user data.</param>
+        /// <param name="logger">The logger used for logging information and errors.</param>
         public AuthController(IAuthService authService, IUserRepository userRepository, ILogger<AuthController> logger)
         {
             _authService = authService;
@@ -25,6 +29,11 @@ namespace EcommerceOrderProcessing.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Registers a new user in the system.
+        /// </summary>
+        /// <param name="regDto">The registration details of the new user.</param>
+        /// <returns>An <see cref="ActionResult"/> indicating the result of the registration operation.</returns>
         [HttpPost("register")]
         public async Task<ActionResult> Register(RegisterDto regDto)
         {
@@ -42,6 +51,11 @@ namespace EcommerceOrderProcessing.Controllers
             }
         }
 
+        /// <summary>
+        /// Authenticates a user and generates a JWT token.
+        /// </summary>
+        /// <param name="logDto">The login details of the user.</param>
+        /// <returns>An <see cref="ActionResult"/> containing the JWT token if authentication is successful.</returns>
         [HttpPost("login")]
         public async Task<ActionResult> Login(LoginDto logDto)
         {
@@ -58,7 +72,10 @@ namespace EcommerceOrderProcessing.Controllers
                 return Unauthorized(ex.Message);
             }
         }
-
+        /// <summary>
+        /// Retrieves the details of the currently authenticated user.
+        /// </summary>
+        /// <returns>An <see cref="ActionResult"/> containing the current user's details.</returns>
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()

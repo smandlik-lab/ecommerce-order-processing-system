@@ -3,9 +3,7 @@ using EcommerceOrderProcessing.Models;
 using EcommerceOrderProcessing.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-//using Swashbuckle.AspNetCore.Filters;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
 
 namespace EcommerceOrderProcessing.Controllers
 {
@@ -17,12 +15,21 @@ namespace EcommerceOrderProcessing.Controllers
         private readonly IOrderService _orderService;
         private readonly ILogger<OrdersController> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="OrdersController"/> class.
+        /// </summary>
+        /// <param name="orderService"></param>
+        /// <param name="logger"></param>
         public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
         {
             _orderService = orderService;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Creates a new order for the authenticated user.
+        /// </summary>
+        /// <returns>An <see cref="ActionResult"/> indicating the result of the operation.</returns>
         [HttpPost]
         public async Task<ActionResult> CreateOrder()
         {
@@ -42,6 +49,10 @@ namespace EcommerceOrderProcessing.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves all orders for the authenticated user.
+        /// </summary>
+        /// <returns>An <see cref="ActionResult"/> containing a list of the user's orders.</returns>
         [HttpGet("my-orders")]
         public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetMyOrders()
         {
@@ -61,6 +72,11 @@ namespace EcommerceOrderProcessing.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves a specific order by its ID for the authenticated user.
+        /// </summary>
+        /// <param name="id">The ID of the order to retrieve.</param>
+        /// <returns>An <see cref="ActionResult"/> containing the order details if found.</returns>
         [HttpGet("{id}")]        
         public async Task<ActionResult<OrderResponseDto>> GetOrderById(int id)
         {
@@ -87,6 +103,11 @@ namespace EcommerceOrderProcessing.Controllers
             }
         }
 
+        /// <summary>
+        /// Cancels an existing order for the authenticated user.
+        /// </summary>
+        /// <param name="id">The ID of the order to cancel.</param>
+        /// <returns>An <see cref="ActionResult"/> indicating the result of the cancellation operation.</returns>
         [HttpPut("cancel/{id}")]
         public async Task<ActionResult> CancelOrder(int id)
         {
@@ -106,8 +127,11 @@ namespace EcommerceOrderProcessing.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves all orders in the system.
+        /// </summary>
+        /// <returns>An <see cref="ActionResult"/> containing a list of all orders.</returns>
         [HttpGet("all")]
-        //[Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetAllOrders()
         {
             try
@@ -124,6 +148,11 @@ namespace EcommerceOrderProcessing.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves all orders in the system with an optional status filter.
+        /// </summary>
+        /// <param name="status">The status to filter orders by (optional).</param>
+        /// <returns>An <see cref="ActionResult"/> containing a list of orders matching the filter criteria.</returns>
         [HttpGet("all/filter")]
         public async Task<ActionResult<IEnumerable<OrderResponseDto>>> GetAllOrdersWithStatusFilter([FromQuery] string? status = null)
         {
@@ -153,8 +182,12 @@ namespace EcommerceOrderProcessing.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [Authorize(Roles = "Admin")]
+        /// <summary>
+        /// Updates the status of an existing order.
+        /// </summary>
+        /// <param name="id">The ID of the order to update.</param>
+        /// <param name="dto">The new status information for the order.</param>
+        /// <returns>An <see cref="ActionResult"/> indicating the result of the update operation.</returns>
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> PatchOrderStatus(int id, [FromBody] UpdateOrderStatusDto dto)
         {
@@ -189,30 +222,6 @@ namespace EcommerceOrderProcessing.Controllers
                 return StatusCode(500, new { message = "An error occurred while updating order status." });
             }
         }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPatch("{id}/payment-status")]
-        public async Task<IActionResult> UpdatePaymentStatus(int id, [FromBody] UpdatePaymentStatusDto dto)
-        {
-            try
-            {
-                _logger.LogInformation("UpdatePaymentStatus request received for OrderId: {OrderId}", id);
-                var updated = await _orderService.UpdatePaymentStatusAsync(id, dto);
-
-                if (!updated)
-                {
-                    _logger.LogWarning("Order not found while updating payment status. OrderId: {OrderId}", id);
-                    return NotFound("Order not found.");
-                }
-
-                _logger.LogInformation("Payment status updated successfully for OrderId: {OrderId}", id);
-                return Ok("Payment status updated successfully.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while updating payment status. OrderId: {OrderId}. Details: {ErrorMessage}", id, ex.Message);
-                return BadRequest(ex.Message);
-            }
-        }
     }
 }
+
