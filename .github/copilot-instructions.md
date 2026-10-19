@@ -5,6 +5,39 @@
 - The API uses Entity Framework Core with SQL Server, JWT bearer authentication, and AWS SQS for asynchronous order processing.
 - Keep changes within the existing structure: `Controllers`, `DTOs`, `Data`, `Models`, `Repositories`, and `Services`.
 
+## Project Structure
+```text
+.
+├── Controllers/                       # API endpoints
+├── DTOs/
+│   ├── Auth/                          # Authentication and profile request DTOs
+│   └── OrderDTOs/                     # Order API and SQS message DTOs
+├── Data/                              # EF Core DbContext
+├── EcommerceOrderProcessing.Tests/
+│   ├── Controllers/                   # Controller unit tests
+│   └── Fixtures/                      # Shared test setup and test data
+├── Migrations/                        # EF Core migrations and model snapshot
+├── Middleware/                       # Correlation ID middleware and HTTP handler
+├── Models/                            # EF Core entities and enums
+├── Properties/                        # Local launch settings
+├── Repositories/
+│   ├── Implementations/               # Repository and Unit of Work implementations
+│   └── Interfaces/                    # Repository and Unit of Work contracts
+├── Services/
+│   ├── BackgroundServices/            # Hosted background workers
+│   ├── Implementations/               # Business logic and integrations
+│   └── Interfaces/                    # Service contracts
+├── .github/
+│   └── copilot-instructions.md        # AI coding guidance for this repository
+├── EcommerceOrderProcessing.csproj
+├── EcommerceOrderProcessing.slnx
+├── EcommerceOrderProcessing.http     # API request examples
+├── Program.cs                         # Application startup and dependency registration
+├── README.md
+├── appsettings.json
+└── appsettings.Development.json
+```
+
 ## Implementation Conventions
 - Keep controllers focused on HTTP concerns; put business logic in services and data access in repositories/`AppDbContext`.
 - Register application services and dependencies in `Program.cs`, following the existing interface/implementation pattern.
