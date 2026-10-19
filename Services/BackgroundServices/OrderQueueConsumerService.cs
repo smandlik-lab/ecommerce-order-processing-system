@@ -67,9 +67,12 @@ namespace EcommerceOrderProcessing.Services.BackgroundServices
 
                     var response = await _sqsClient.ReceiveMessageAsync(receiveRequest, stoppingToken);
 
-                    foreach (var message in response.Messages)
+                    if (response.Messages != null && response.Messages.Count > 0)
                     {
-                        await ProcessOrderMessageAsync(message, stoppingToken);
+                        foreach (var message in response.Messages)
+                        {
+                            await ProcessOrderMessageAsync(message, stoppingToken);
+                        }
                     }
                 }
                 catch (Exception ex)

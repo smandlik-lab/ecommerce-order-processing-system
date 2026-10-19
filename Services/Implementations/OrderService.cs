@@ -10,12 +10,14 @@ namespace EcommerceOrderProcessing.Services.Implementations
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IOrderQueueService _orderQueueService;
         private readonly ILogger<OrderService> _logger;
 
-        public OrderService(IOrderRepository orderRepository, IUnitOfWork unitOfWork, ILogger<OrderService> logger)
+        public OrderService(IOrderRepository orderRepository, IUnitOfWork unitOfWork, IOrderQueueService orderQueueService, ILogger<OrderService> logger)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
+            _orderQueueService = orderQueueService;
             _logger = logger;
         }
 
@@ -73,6 +75,10 @@ namespace EcommerceOrderProcessing.Services.Implementations
                 await _orderRepository.AddAsync(order);
                 _orderRepository.RemoveCartItemsRange(cart.CartItems);
                 await _unitOfWork.SaveChangesAsync();
+
+                // Enqueue pending order for processing with 5-minute delay
+                await _orderQueueService.EnqueuePendingOrderAsync(order.Id);
+
                 _logger.LogInformation("Order created successfully. OrderId: {OrderId}, UserId: {UserId}, TotalAmount: {TotalAmount}", order.Id, userId, totalPrice);
             }
             catch (Exception ex)

@@ -5,6 +5,7 @@ using EcommerceOrderProcessing.Repositories.Interfaces;
 using EcommerceOrderProcessing.Services.BackgroundServices;
 using EcommerceOrderProcessing.Services.Implementations;
 using EcommerceOrderProcessing.Services.Interfaces;
+using EcommerceOrderProcessing.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -55,6 +56,9 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+// Required to access HttpContext inside background services or DelegatingHandlers
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -119,6 +123,9 @@ builder.Services.AddScoped<IOrderQueueService, OrderQueueService>();
 
 // Register Consumer Background Worker
 builder.Services.AddHostedService<OrderQueueConsumerService>();
+
+// Register the HTTP client delegating handler
+builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
 
 
 var app = builder.Build();
