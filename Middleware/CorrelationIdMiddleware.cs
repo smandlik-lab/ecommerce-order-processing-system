@@ -14,17 +14,20 @@
 
         public async Task InvokeAsync(HttpContext context)
         {
-            // 1. Check if a Correlation ID was passed from a gateway/client, otherwise create one
-            if (!context.Request.Headers.TryGetValue(CorrelationIdHeaderName, out var correlationId))
+            var correlationId = context.Request.Headers[CorrelationIdHeaderName].FirstOrDefault();
+            if (string.IsNullOrEmpty(correlationId))
             {
                 correlationId = Guid.NewGuid().ToString();
-                context.Request.Headers[CorrelationIdHeaderName] = correlationId;
             }
+            context.Request.Headers[CorrelationIdHeaderName] = correlationId;
 
-            // 2. Map it to ASP.NET Core's TraceIdentifier for built-in tracing tracking
             context.TraceIdentifier = correlationId;
 
-            // 3. Ensure the response returns the Correlation ID back to the client
+            if (!context.Response.Headers.ContainsKey(CorrelationIdHeaderName))
+            {
+                context.Response.Headers.Append(CorrelationIdHeaderName, correlationId);
+            }
+
             context.Response.OnStarting(() =>
             {
                 if (!context.Response.Headers.ContainsKey(CorrelationIdHeaderName))
@@ -34,9 +37,20 @@
                 return Task.CompletedTask;
             });
 
-            // 4. Create a Built-in Logging Scope 
-            // Any ILogger.Log() called inside this block will automatically include "CorrelationId"
-            using (_logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = correlationId.ToString() }))
+            var activity = System.Diagnostics.Activity.Current;
+            var parentSpanId = activity?.ParentSpanId.ToString() ?? string.Empty;
+            var traceId = activity?.TraceId.ToString() ?? string.Empty;
+            var spanId = activity?.SpanId.ToString() ?? string.Empty;
+
+            using (_logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId.ToString(),
+                ["TransId"] = traceId,
+                ["TraceId"] = traceId,
+                ["SpanId"] = spanId,
+                ["ParentId"] = parentSpanId,
+                ["ConnectionId"] = context.Connection.Id ?? string.Empty
+            }))
             {
                 await _next(context);
             }

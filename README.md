@@ -25,6 +25,20 @@ The AWS SDK uses its standard credential chain; configure AWS credentials with a
 
 ---
 
+## Distributed Tracing Status
+
+The request pipeline registers `CorrelationIdMiddleware`. It uses an incoming `X-Correlation-ID` or generates one, sets `HttpContext.TraceIdentifier`, returns the ID in the response header, and adds structured trace context to the logging scope:
+
+- `TransId` and `TraceId` are the active W3C `Activity` trace ID.
+- `SpanId` and `ParentId` are the active span ID and its parent span ID.
+- `ConnectionId` is the ASP.NET Core connection identifier.
+
+The named `CorrelatedClient` HttpClient is configured with `CorrelationIdDelegatingHandler` to propagate `X-Correlation-ID`. HttpClientFactory's built-in diagnostics propagate the W3C trace context on outbound requests. Use `IHttpClientFactory.CreateClient("CorrelatedClient")` for future outbound integrations to preserve this behavior.
+
+The application currently has no outbound HTTP integrations or tracing exporter/backend configured. Middleware and outbound correlation propagation are covered by unit tests; this setup provides request correlation and W3C context propagation, but does not itself export traces to a monitoring system.
+
+---
+
 ## 🧠 Architecture
 
 The project follows a clean layered architecture:

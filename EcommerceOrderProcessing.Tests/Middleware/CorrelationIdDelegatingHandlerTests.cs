@@ -71,23 +71,6 @@ namespace EcommerceOrderProcessing.Tests.Middleware
         }
 
         [Fact]
-        public void Handler_ShouldRetrieveTraceIdentifierFromHttpContext()
-        {
-            // Arrange
-            var mockContextAccessor = new Mock<IHttpContextAccessor>();
-            var httpContext = new DefaultHttpContext();
-            var correlationId = Guid.NewGuid().ToString();
-            httpContext.TraceIdentifier = correlationId;
-            mockContextAccessor.Setup(a => a.HttpContext).Returns(httpContext);
-
-            // Act
-            var handler = new CorrelationIdDelegatingHandler(mockContextAccessor.Object);
-
-            // Assert
-            mockContextAccessor.Verify(a => a.HttpContext, Times.AtLeastOnce);
-        }
-
-        [Fact]
         public void Handler_WithNullHttpContext_ShouldHandleGracefully()
         {
             // Arrange
@@ -177,6 +160,42 @@ namespace EcommerceOrderProcessing.Tests.Middleware
             client.DefaultRequestHeaders.Should().NotBeNull();
         }
 
+        [Fact]
+        public async Task Handler_ShouldPropagateCorrelationIdOnOutboundRequest()
+        {
+            var correlationId = Guid.NewGuid().ToString();
+            var httpContext = new DefaultHttpContext();
+            httpContext.TraceIdentifier = correlationId;
+            var mockContextAccessor = new Mock<IHttpContextAccessor>();
+            mockContextAccessor.Setup(a => a.HttpContext).Returns(httpContext);
+            var innerHandler = new CapturingHandler();
+            var handler = new CorrelationIdDelegatingHandler(mockContextAccessor.Object)
+            {
+                InnerHandler = innerHandler
+            };
+            using var client = new HttpClient(handler);
+
+            using var response = await client.GetAsync("https://example.test/");
+
+            response.IsSuccessStatusCode.Should().BeTrue();
+            innerHandler.Request.Should().NotBeNull();
+            innerHandler.Request!.Headers.GetValues(CorrelationIdHeaderName).Should().ContainSingle()
+                .Which.Should().Be(correlationId);
+        }
+
         #endregion
+
+        private sealed class CapturingHandler : HttpMessageHandler
+        {
+            public HttpRequestMessage? Request { get; private set; }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                Request = request;
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+            }
+        }
     }
 }

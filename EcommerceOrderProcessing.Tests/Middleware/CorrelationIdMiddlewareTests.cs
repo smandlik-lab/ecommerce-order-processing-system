@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using EcommerceOrderProcessing.Middleware;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using System.Diagnostics;
 
 namespace EcommerceOrderProcessing.Tests.Middleware
 {
@@ -80,6 +81,7 @@ namespace EcommerceOrderProcessing.Tests.Middleware
 
             // Act
             await middleware.InvokeAsync(context);
+            await context.Response.StartAsync();
 
             // Assert
             context.Response.Headers.Should().ContainKey(CorrelationIdHeaderName);
@@ -97,6 +99,7 @@ namespace EcommerceOrderProcessing.Tests.Middleware
 
             // Act
             await middleware.InvokeAsync(context);
+            await context.Response.StartAsync();
 
             // Assert
             context.Response.Headers[CorrelationIdHeaderName].ToString().Should().Be(existingCorrelationId);
@@ -178,8 +181,35 @@ namespace EcommerceOrderProcessing.Tests.Middleware
 
             // Assert
             capturedScope.Should().NotBeNull();
-            capturedScope!.Should().ContainKey("CorrelationId");
-            capturedScope["CorrelationId"].Should().Be(providedCorrelationId);
+            var scope = capturedScope!;
+            scope.Should().ContainKey("CorrelationId");
+            scope["CorrelationId"].Should().Be(providedCorrelationId);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldIncludeDistributedTraceIdentifiersInLoggingScope()
+        {
+            var traceId = "0123456789abcdef0123456789abcdef";
+            var parentSpanId = "0123456789abcdef";
+            using var activity = new Activity("test-request")
+                .SetIdFormat(ActivityIdFormat.W3C)
+                .SetParentId($"00-{traceId}-{parentSpanId}-01")
+                .Start();
+            var context = new DefaultHttpContext();
+            Dictionary<string, object>? capturedScope = null;
+            _mockLogger.Setup(x => x.BeginScope(It.IsAny<Dictionary<string, object>>()))
+                .Callback<Dictionary<string, object>>(scope => capturedScope = scope)
+                .Returns(new Mock<IDisposable>().Object);
+
+            await CreateMiddleware().InvokeAsync(context);
+
+            capturedScope.Should().NotBeNull();
+            var scope = capturedScope!;
+            scope["TransId"].Should().Be(traceId);
+            scope["TraceId"].Should().Be(traceId);
+            scope["SpanId"].Should().Be(activity.SpanId.ToString());
+            scope["ParentId"].Should().Be(parentSpanId);
+            scope["ConnectionId"].Should().Be(context.Connection.Id ?? string.Empty);
         }
 
         #endregion
@@ -269,6 +299,7 @@ namespace EcommerceOrderProcessing.Tests.Middleware
 
             // Act
             await middleware.InvokeAsync(context);
+            await context.Response.StartAsync();
 
             // Assert
             context.TraceIdentifier.Should().Be(longId);
@@ -286,6 +317,7 @@ namespace EcommerceOrderProcessing.Tests.Middleware
 
             // Act
             await middleware.InvokeAsync(context);
+            await context.Response.StartAsync();
 
             // Assert
             context.TraceIdentifier.Should().Be(specialId);

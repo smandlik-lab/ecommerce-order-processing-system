@@ -126,6 +126,8 @@ builder.Services.AddHostedService<OrderQueueConsumerService>();
 
 // Register the HTTP client delegating handler
 builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
+builder.Services.AddHttpClient("CorrelatedClient")
+    .AddHttpMessageHandler<CorrelationIdDelegatingHandler>();
 
 
 var app = builder.Build();
@@ -145,6 +147,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseRouting();
 
 // Authentication & Authorization must come AFTER Swagger middleware and Routing
