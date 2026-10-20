@@ -19,5 +19,4 @@
 - [ ] Replace plain SHA-256 password hashing with a password-specific, salted password hashing implementation.
 - [ ] Review authorization for administrative order operations; role-based authorization was not evident in the inspected controller.
 - [ ] Register `CorrelationIdMiddleware` in the HTTP pipeline. The middleware and outbound delegating handler exist, but the middleware is not wired in `Program.cs`.
-- [ ] Add tests for services, SQS producer/consumer behavior, and correlation-ID handling. Existing tests cover controllers only.
 - [ ] Verify README feature claims (including payment, email, and recommendations) against implementation; they were not confirmed as wired into the inspected API.

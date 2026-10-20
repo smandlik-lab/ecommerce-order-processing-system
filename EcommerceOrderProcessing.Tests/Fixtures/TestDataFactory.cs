@@ -139,5 +139,49 @@ namespace EcommerceOrderProcessing.Tests.Fixtures
                 Password = "Password123!"
             };
         }
+
+        public static OrderMessageDto CreateOrderMessageDto(int orderId = 1)
+        {
+            return new OrderMessageDto
+            {
+                OrderId = orderId
+            };
+        }
+
+        public static string GenerateCorrelationId()
+        {
+            return Guid.NewGuid().ToString();
+        }
+
+        public static Cart CreateCartWithMultipleItems(int userId = 1, int itemCount = 3)
+        {
+            var cartItems = new List<CartItem>();
+            for (int i = 0; i < itemCount; i++)
+            {
+                cartItems.Add(new CartItem
+                {
+                    Id = i + 1,
+                    CartId = 1,
+                    ProductId = i + 1,
+                    Quantity = i + 1,
+                    Product = CreateTestProduct(i + 1, $"Product {i + 1}")
+                });
+            }
+
+            return new Cart
+            {
+                Id = 1,
+                UserId = userId,
+                CartItems = cartItems
+            };
+        }
+
+        public static ForgotPasswordDto CreateForgotPasswordDto(string email = "test@example.com")
+        {
+            return new ForgotPasswordDto
+            {
+                Email = email
+            };
+        }
     }
 }
