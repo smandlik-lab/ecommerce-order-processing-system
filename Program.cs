@@ -60,6 +60,25 @@ builder.Services.AddSwaggerGen(c =>
 // Required to access HttpContext inside background services or DelegatingHandlers
 builder.Services.AddHttpContextAccessor();
 
+// 1. Define a specific CORS policy name
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy =>
+        {
+            // SPECIFY your trusted frontend/gateway origins here (avoid AllowAnyOrigin in production)
+            policy.WithOrigins("http://localhost:3000", 
+                               "https://your-frontend-app.com")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+                  
+            // Note: If your app uses authentication cookies/tokens with credentials, 
+            // you must also chain .AllowCredentials() (and cannot use AllowAnyOrigin()).
+        });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
@@ -149,6 +168,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseRouting();
+
+// 2. USE CORS Middleware here (Must be before UseAuthorization and MapControllers)
+app.UseCors(MyAllowSpecificOrigins);
 
 // Authentication & Authorization must come AFTER Swagger middleware and Routing
 app.UseAuthentication();
