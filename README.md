@@ -43,6 +43,19 @@ info: EcommerceOrderProcessing.Services.Implementations.AuthService[0]
       User logged in successfully. Email: string@gmail.com, UserId: 1
 ---
 
+## CORS Configuration
+
+`Program.cs` defines and applies the `_myAllowSpecificOrigins` CORS policy. The policy currently allows browser requests from:
+
+- `http://localhost:3000`
+- `https://your-frontend-app.com` (example placeholder; replace it with the deployed frontend's exact origin)
+
+The policy allows any request header and HTTP method, which permits headers such as `Authorization` used with bearer tokens. It does not enable cross-origin credentials (`AllowCredentials` is not configured), and it does not use `AllowAnyOrigin`. Replace the example origin with the trusted production frontend origin before deployment.
+
+The CORS middleware runs after routing and before authentication, authorization, and controller endpoint execution. CORS controls which browser origins may read cross-origin responses; it is not a replacement for authentication or authorization.
+
+---
+
 ## 🧠 Architecture
 
 The project follows a clean layered architecture:
