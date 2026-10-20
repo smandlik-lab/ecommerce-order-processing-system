@@ -37,6 +37,10 @@ The named `CorrelatedClient` HttpClient is configured with `CorrelationIdDelegat
 
 The application currently has no outbound HTTP integrations or tracing exporter/backend configured. Middleware and outbound correlation propagation are covered by unit tests; this setup provides request correlation and W3C context propagation, but does not itself export traces to a monitoring system.
 
+e.g. 
+info: EcommerceOrderProcessing.Services.Implementations.AuthService[0]
+      => SpanId:4549f289bc1fa154, TraceId:bfc6b59e7bea3ef9c1055f30c1d8d8a2, ParentId:0000000000000000 => ConnectionId:0HNPEHIO8CKA7 => RequestPath:/api/Auth/login RequestId:0HNPEHIO8CKA7:00000001 => System.Collections.Generic.Dictionary`2[System.String,System.Object] => EcommerceOrderProcessing.Controllers.AuthController.Login (EcommerceOrderProcessing)
+      User logged in successfully. Email: string@gmail.com, UserId: 1
 ---
 
 ## 🧠 Architecture
