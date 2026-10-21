@@ -14,8 +14,9 @@
 - [x] Correlation middleware is registered in the HTTP pipeline, and the `CorrelatedClient` HttpClient is configured with the correlation delegating handler. HttpClientFactory's standard diagnostics propagate W3C trace context for outbound requests made through this named client.
 - [x] Observability metrics configured with OpenTelemetry instrumentation for ASP.NET Core requests, outbound HttpClient requests, and .NET runtime metrics; Prometheus exporter is exposed at `/metrics`.
 - [x] Prometheus scrape configuration (`prometheus.yml`) and Docker Compose services for Prometheus and Grafana are included.
+- [x] README feature inventory distinguishes available API endpoints and implemented capabilities from models/service methods without routes and integrations that are not implemented.
 - [x] Copilot instructions describing architecture, conventions, secret handling, testing, migrations, and AI guardrails.
-- [x] Unit tests include 24 xUnit controller tests across authentication and order controllers, using Moq and FluentAssertions.
+- [x] Unit test sources contain 92 xUnit `[Fact]`/`[Theory]` cases across controller, service, SQS, and middleware tests. This is a source count, not a claim that all 92 tests were run.
 - [x] All 26 focused correlation middleware/handler tests passed, covering trace/span/parent/connection IDs in logging scope and outbound correlation-ID propagation.
 
 ## Identified Gaps / Follow-up Work
@@ -25,4 +26,3 @@
 - [ ] Review authorization for administrative order operations; role-based authorization was not evident in the inspected controller.
 - [ ] Connect any future outbound HTTP integrations through `IHttpClientFactory.CreateClient("CorrelatedClient")` to use the configured correlation handler and standard W3C trace propagation. No outbound HTTP integrations or distributed trace exporter/backend are currently configured; the OpenTelemetry exporter in place exports metrics.
 - [ ] Configure a Grafana Prometheus data source/dashboard and secure the default Grafana credentials before exposing the observability stack beyond local development.
-- [ ] Verify README feature claims (including payment, email, and recommendations) against implementation; they were not confirmed as wired into the inspected API.

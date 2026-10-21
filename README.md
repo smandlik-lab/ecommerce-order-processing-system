@@ -2,17 +2,48 @@
 A backend for an E-commerce Order Processing System. The system should allow customers to place orders, track their status, and support basic order operations.
 
 
-#  E-Commerce Backend API (.NET)
+# E-Commerce Backend API (.NET)
 
-A production-ready E-commerce backend system built using ASP.NET Core, following clean layered architecture principles and real-world backend design patterns.
+An e-commerce backend API built with ASP.NET Core using a layered architecture.
 
 ## 📌 Overview
 
-This project simulates a real-world e-commerce backend system with advanced features beyond basic CRUD operations.
+The repository currently implements JWT authentication endpoints, authenticated order operations, EF Core persistence, and asynchronous order completion through AWS SQS. The feature list below distinguishes API endpoints from service methods and domain models so it does not imply unfinished integrations are available.
 
-It includes authentication, product management, cart handling, order processing, payment integration, and email notifications.
+## Features
 
-The system is designed with scalability and maintainability in mind, using modern backend architecture patterns such as Generic Repository, Repository Pattern, and Unit of Work.
+### 🔐 Authentication and User Management
+
+**Available API endpoints:**
+
+- Register a user (`POST /api/Auth/register`).
+- Log in and receive a JWT (`POST /api/Auth/login`).
+- Retrieve the authenticated user's profile (`GET /api/Auth/me`).
+
+**Service methods without API endpoints:** profile updates, password changes, email changes, forgot-password handling, and logout have service/interface methods, but no corresponding controller routes are exposed.
+
+### 📦 Orders
+
+- Create an order from the authenticated user's existing cart. The service checks product availability, reduces stock, removes the cart items, persists the order, and enqueues it for asynchronous processing.
+- Retrieve the authenticated user's order list or a specific order.
+- Cancel an eligible order.
+- List orders and filter by status.
+- Update order status.
+- Process pending orders through an AWS SQS consumer; the background worker changes pending orders to completed.
+
+### 🧱 Product, Category, and Cart Models
+
+Product, category, cart, and cart-item entities are defined and persisted through EF Core. The repository does not currently expose product/category CRUD endpoints or add/remove/update-cart-item endpoints. The existing order-creation flow reads cart contents.
+
+### 📈 Observability
+
+- OpenTelemetry metrics for ASP.NET Core requests, `HttpClient` requests, and .NET runtime measurements.
+- Prometheus metrics scrape endpoint at `/metrics`, with Prometheus and Grafana support described below.
+- Correlation ID and W3C trace-context details in logging scopes (see Distributed Tracing Status).
+
+### Not currently implemented
+
+- Email confirmation or notification delivery. A Resend configuration entry is not an email-sending implementation.
 
 ---
 
@@ -116,7 +147,6 @@ The project follows a clean layered architecture:
 
 - Implemented Generic Repository Pattern to reduce code duplication
 - Designed scalable data access layer using Unit of Work
-- Built recommendation system based on user behavior
 
 ---
 
