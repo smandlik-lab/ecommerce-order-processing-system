@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using OpenTelemetry.Metrics;
 
 // Swagger removed to avoid ReflectionTypeLoadException caused by incompatible Swashbuckle packages
 
@@ -143,11 +144,18 @@ builder.Services.AddScoped<IOrderQueueService, OrderQueueService>();
 // Register Consumer Background Worker
 builder.Services.AddHostedService<OrderQueueConsumerService>();
 
-// Register the HTTP client delegating handler
+// Register the HTTP client delegating handler for Unique Correlation ID propagation across services
 builder.Services.AddTransient<CorrelationIdDelegatingHandler>();
 builder.Services.AddHttpClient("CorrelatedClient")
     .AddHttpMessageHandler<CorrelationIdDelegatingHandler>();
 
+// Add OpenTelemetry Metrics independently
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation() // // Tracks incoming HTTP request counts and durations
+        .AddHttpClientInstrumentation() // Tracks outgoing HTTP client requests
+        .AddRuntimeInstrumentation()    // Tracks .NET runtime metrics (Memory, GC, ThreadPool)
+        .AddPrometheusExporter());      // Exposes metrics for Prometheus/Grafana
 
 var app = builder.Build();
 
@@ -177,5 +185,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map the Prometheus scraping endpoint so Prometheus can read your metrics at /metrics
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();

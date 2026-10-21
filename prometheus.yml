@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'ecommerce-order-api'
+    static_configs:
+      # Use host.docker.internal if running your .NET app locally outside of Docker
+      - targets: ['host.docker.internal:7204'] # Match your local app port
