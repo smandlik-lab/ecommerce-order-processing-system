@@ -35,12 +35,39 @@ The request pipeline registers `CorrelationIdMiddleware`. It uses an incoming `X
 
 The named `CorrelatedClient` HttpClient is configured with `CorrelationIdDelegatingHandler` to propagate `X-Correlation-ID`. HttpClientFactory's built-in diagnostics propagate the W3C trace context on outbound requests. Use `IHttpClientFactory.CreateClient("CorrelatedClient")` for future outbound integrations to preserve this behavior.
 
-The application currently has no outbound HTTP integrations or tracing exporter/backend configured. Middleware and outbound correlation propagation are covered by unit tests; this setup provides request correlation and W3C context propagation, but does not itself export traces to a monitoring system.
+The application currently has no outbound HTTP integrations or distributed trace exporter/backend configured. Middleware and outbound correlation propagation are covered by unit tests; OpenTelemetry metrics are exported separately as described below.
 
 e.g. 
 info: EcommerceOrderProcessing.Services.Implementations.AuthService[0]
       => SpanId:4549f289bc1fa154, TraceId:bfc6b59e7bea3ef9c1055f30c1d8d8a2, ParentId:0000000000000000 => ConnectionId:0HNPEHIO8CKA7 => RequestPath:/api/Auth/login RequestId:0HNPEHIO8CKA7:00000001 => System.Collections.Generic.Dictionary`2[System.String,System.Object] => EcommerceOrderProcessing.Controllers.AuthController.Login (EcommerceOrderProcessing)
       User logged in successfully. Email: string@gmail.com, UserId: 1
+---
+
+## Observability: OpenTelemetry Metrics, Prometheus, and Grafana
+
+The API configures OpenTelemetry metrics in `Program.cs` and exposes a Prometheus scrape endpoint at `/metrics`. The configured instrumentations collect:
+
+- ASP.NET Core incoming HTTP request metrics, including request counts and durations.
+- Outgoing `HttpClient` request metrics.
+- .NET runtime metrics, including memory, garbage collection, and thread-pool measurements.
+
+The scrape endpoint is available at `http://localhost:5190/metrics` when using the HTTP launch profile, or at `https://localhost:7204/metrics` when using the HTTPS launch profile.
+
+The repository includes `prometheus.yml`, configured to scrape every 15 seconds with the `ecommerce-order-api` job, and `docker-compose.yml` to start Prometheus and Grafana:
+
+```powershell
+docker compose up -d
+```
+
+- Prometheus UI: `http://localhost:9090`
+- Grafana UI: `http://localhost:3000`
+
+The Compose file starts Prometheus and Grafana, not the API; run the API separately using one of the launch profiles above. The Compose file sets Grafana's initial login to `admin` / `admin`. Change these credentials before exposing Grafana beyond a local development environment. The Compose setup does not provision a Grafana Prometheus data source or dashboards; configure a Prometheus data source in Grafana using `http://prometheus:9090`.
+
+When the API runs directly on the host, `prometheus.yml` currently targets `host.docker.internal:7204`. The application's HTTPS profile uses TLS on port 7204; ensure the Prometheus target's scheme and port match the API profile you run. If scraping the HTTP profile instead, target `host.docker.internal:5190`.
+
+This setup exports metrics, not distributed trace spans. The correlation-ID and W3C trace-context logging described above are separate from metric collection.
+
 ---
 
 ## CORS Configuration
