@@ -29,10 +29,12 @@
 │   ├── BackgroundServices/            # Hosted background workers
 │   ├── Implementations/               # Business logic and integrations
 │   └── Interfaces/                    # Service contracts
+├── .github/
+│   ├── agents/                        # Workspace custom agents
+│   ├── skills/                        # On-demand repository workflows
+│   └── copilot-instructions.md        # Always-on repository guidance
 ├── docker-compose.yml                 # Local Prometheus and Grafana services
 ├── prometheus.yml                     # Prometheus scrape configuration
-├── .github/
-│   └── copilot-instructions.md        # AI coding guidance for this repository
 ├── EcommerceOrderProcessing.csproj
 ├── EcommerceOrderProcessing.slnx
 ├── EcommerceOrderProcessing.http     # API request examples
