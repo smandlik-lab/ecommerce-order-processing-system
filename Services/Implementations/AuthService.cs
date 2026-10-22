@@ -139,27 +139,44 @@ namespace EcommerceOrderProcessing.Services.Implementations
 
         private string GenerateToken(User user)
         {
+            // JWT (JSON Web Token) consists of three parts separated by dots (.):
+            // 1. HEADER - Contains the token type (JWT) and the hashing algorithm (HMAC SHA256)
+            // 2. PAYLOAD - Contains claims (user information) encoded in Base64Url
+            // 3. SIGNATURE - Cryptographic signature to verify token hasn't been tampered with
+            // Format: header.payload.signature
+
+            // PAYLOAD SECTION: Claims are statements about the subject (user)
+            // Claims contain user identity information that will be encoded in the token
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.ToString())
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // Subject identifier (sub)
+                new Claim(ClaimTypes.Email, user.Email),                  // User email
+                new Claim(ClaimTypes.Role, user.Role.ToString())          // User role for authorization
             };
 
+            // SIGNATURE SECTION - Part 1: Create the signing key
+            // The key is derived from the JWT secret stored in configuration
+            // This secret is used to create a HMAC SHA256 signature
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
             );
 
+            // SIGNATURE SECTION - Part 2: Define signing credentials
+            // Specifies the algorithm (HmacSha256) to use for creating the digital signature
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            // Create the complete JWT token
+            // This combines the header, payload claims, and signature
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddDays(7),
-                signingCredentials: creds
+                issuer: _config["Jwt:Issuer"],      // Token issuer (who created it) - iss claim
+                audience: _config["Jwt:Audience"],  // Token audience (intended recipient) - aud claim
+                claims: claims,                      // PAYLOAD: User claims/data
+                expires: DateTime.Now.AddDays(7),   // Expiration time (exp claim) - token valid for 7 days
+                signingCredentials: creds           // SIGNATURE: Signing key and algorithm
             );
 
+            // Convert the JWT object to a string token (Base64Url encoded format)
+            // Result format: eyJhbGciOiJIUzI1NiI...eyJzdWIiOiIxIiwi....Ub7xWCU5gZpUtQ
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 

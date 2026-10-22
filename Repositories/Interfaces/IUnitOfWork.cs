@@ -6,7 +6,7 @@ namespace EcommerceOrderProcessing.Repositories.Interfaces
     {
         //IProductRepository Products { get; }
         //ICategoryRepository Categories { get; }
-        //IUserRepository Users { get; }
+        IUserRepository Users { get; }
         //ICartRepository Carts { get; }
         IOrderRepository Orders { get; }
        // IRecommendationRepository Recommendations { get; }
