@@ -154,8 +154,8 @@ namespace EcommerceOrderProcessing.Services.Implementations
 
                 foreach (var item in order.OrderItems)
                 {
-                    //if (item.Product != null)
-                    //    item.Product.StockQuantity += item.Quantity;
+                    if (item.Product != null)
+                        item.Product.StockQuantity += item.Quantity;
                 }
 
                 order.Status = OrderStatus.Cancelled;

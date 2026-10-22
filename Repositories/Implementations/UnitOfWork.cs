@@ -6,14 +6,15 @@ namespace EcommerceOrderProcessing.Repositories.Implementations
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext _context;
-        private IOrderRepository? _orders;
 
-        public UnitOfWork(AppDbContext context)
+        public IOrderRepository Orders { get; }
+
+        public UnitOfWork(AppDbContext context,
+            IOrderRepository orderRepository)
         {
             _context = context;
-        }
-
-        public IOrderRepository Orders => _orders ??= new OrderRepository(_context);
+            Orders = orderRepository;
+        }        
 
         public async Task<int> SaveChangesAsync()
         {
