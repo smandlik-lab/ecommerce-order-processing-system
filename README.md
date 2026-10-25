@@ -10,6 +10,10 @@ An e-commerce backend API built with ASP.NET Core using a layered architecture.
 
 The repository currently implements JWT authentication endpoints, authenticated order operations, EF Core persistence, and asynchronous order completion through AWS SQS. The feature list below distinguishes API endpoints from service methods and domain models so it does not imply unfinished integrations are available.
 
+## API requests
+
+Import [`EcommerceOrderProcessing.postman_collection.json`](./EcommerceOrderProcessing.postman_collection.json) into Postman to try the routes exposed by `AuthController` and `OrdersController`. The collection defaults to `http://localhost:5190`; change `baseUrl` to match the API launch profile. Register a user, then run Login to save its JWT to the `token` collection variable before sending protected requests.
+
 ## Features
 
 ### 🔐 Authentication and User Management
